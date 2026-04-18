@@ -116,20 +116,30 @@ if st.button(t["find"]):
     st.session_state["route"] = find_route(start_station, end_station)
 
 
-# GPS Location Detection
 st.markdown("### 📍 Detect Nearest Metro Station")
 
-location = streamlit_geolocation()
+if st.button("Use My Location"):
 
-if location:
+    location = streamlit_geolocation()
 
-    lat = location["latitude"]
-    lon = location["longitude"]
+    if location is not None:
 
-    station, distance = find_nearest_station(lat, lon)
+        lat = location.get("latitude")
+        lon = location.get("longitude")
 
-    st.success(f"Nearest Station: {station} ({round(distance,2)} km away)")
+        if lat is not None and lon is not None:
 
+            station, distance = find_nearest_station(lat, lon)
+
+            st.success(
+                f"Nearest Station: {station} ({round(distance,2)} km away)"
+            )
+
+        else:
+            st.info("Detecting your location... please wait")
+
+    else:
+        st.warning("Location access denied or unavailable")
 
 # Route result
 route_coords = []
