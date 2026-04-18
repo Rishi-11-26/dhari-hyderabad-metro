@@ -1,16 +1,16 @@
 from datetime import datetime
 
 
+from datetime import datetime
+
 def metro_service_status():
 
     now = datetime.now()
 
-    current_time = now.hour + now.minute / 60
+    start_time = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    end_time = now.replace(hour=23, minute=0, second=0, microsecond=0)
 
-    start_time = 6
-    end_time = 23
-
-    if start_time <= current_time <= end_time:
+    if start_time <= now <= end_time:
         return True
-
-    return False
+    else:
+        return False
