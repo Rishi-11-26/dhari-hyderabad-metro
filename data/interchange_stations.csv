@@ -1,4 +1,4 @@
-station	lines
-Ameerpet	Red-Blue
-MG Bus Station	Red-Green
-Parade Ground	Blue-Green
+station,lines
+Ameerpet,Red|Blue
+Parade Ground,Blue|Green
+MG Bus Station,Red|Green
