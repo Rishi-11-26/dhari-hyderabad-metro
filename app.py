@@ -2,18 +2,13 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
+from streamlit_geolocation import streamlit_geolocation
 
 from route_engine import find_route
 from fare_engine import calculate_fare
 from time_estimator import estimate_travel
 from nearest_station import find_nearest_station
 from service_clock import metro_service_status
-
-try:
-    from location_service import get_device_location
-    gps_available = True
-except:
-    gps_available = False
 
 
 st.set_page_config(
@@ -22,16 +17,20 @@ st.set_page_config(
     layout="wide"
 )
 
+# Load datasets
 stations_df = pd.read_csv("data/stations.csv")
+
 station_list = stations_df["station"].unique()
 
-# metro line colors
+# Metro line colors
 line_colors = {
     "Red": "red",
     "Blue": "blue",
     "Green": "green"
 }
 
+
+# Language selection
 language = st.sidebar.selectbox(
     "Language / भाषा / భాష",
     ["English", "हिंदी", "తెలుగు"]
@@ -75,7 +74,7 @@ translations = {
         "plan": "మీ మెట్రో ప్రయాణాన్ని ప్లాన్ చేయండి",
         "start": "ప్రారంభ స్టేషన్",
         "end": "గమ్యస్థానం స్టేషన్",
-        "find": "మార్గం కనుగొనండి",
+        "find": "మార్గం కనుగొను",
         "stations": "స్టేషన్లు",
         "time": "అంచనా సమయం",
         "fare": "చార్జ్",
@@ -87,25 +86,22 @@ translations = {
 
 t = translations[language]
 
-st.markdown(
-f"<h1 style='text-align:center;'>🚇 {t['title']}</h1>",
-unsafe_allow_html=True
-)
 
-st.markdown(
-f"<p style='text-align:center;color:gray'>{t['subtitle']}</p>",
-unsafe_allow_html=True
-)
+st.markdown(f"<h1 style='text-align:center;'>🚇 {t['title']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center;color:gray'>{t['subtitle']}</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
+
+# Metro service clock
 if not metro_service_status():
-    st.warning(
-        "Metro service currently closed. Operating hours: 06:00 AM – 11:00 PM"
-    )
+    st.warning("Metro service currently closed (6 AM – 11 PM)")
+
 
 st.subheader(t["plan"])
 
+
+# Station selectors
 col1, col2 = st.columns(2)
 
 with col1:
@@ -114,28 +110,28 @@ with col1:
 with col2:
     end_station = st.selectbox(t["end"], station_list)
 
+
+# Route calculation
 if st.button(t["find"]):
     st.session_state["route"] = find_route(start_station, end_station)
 
-if gps_available:
-    if st.button(t["gps"]):
 
-        lat, lon = get_device_location()
+# GPS Location Detection
+st.markdown("### 📍 Detect Nearest Metro Station")
 
-        if lat and lon:
+location = streamlit_geolocation()
 
-            station, distance = find_nearest_station(lat, lon)
+if location:
 
-            st.success(
-                f"Nearest Station: {station} ({round(distance,2)} km)"
-            )
+    lat = location["latitude"]
+    lon = location["longitude"]
 
-            start_station = station
+    station, distance = find_nearest_station(lat, lon)
 
-        else:
-            st.warning("Location permission denied")
+    st.success(f"Nearest Station: {station} ({round(distance,2)} km away)")
 
 
+# Route result
 route_coords = []
 
 if "route" in st.session_state:
@@ -183,10 +179,14 @@ if "route" in st.session_state:
 st.markdown("---")
 st.subheader(t["map"])
 
+
+# Map center
 map_center = [17.3850, 78.4867]
 
 m = folium.Map(location=map_center, zoom_start=11)
 
+
+# Add station markers
 for _, row in stations_df.iterrows():
 
     folium.Marker(
@@ -195,7 +195,8 @@ for _, row in stations_df.iterrows():
         icon=folium.Icon(color="blue", icon="train")
     ).add_to(m)
 
-# colored metro route visualization
+
+# Colored route visualization
 if route_coords:
 
     for i in range(len(route_coords) - 1):
@@ -214,7 +215,9 @@ if route_coords:
             weight=6
         ).add_to(m)
 
+
 st_folium(m, width=900, height=500)
+
 
 st.markdown("---")
 
@@ -222,8 +225,5 @@ st.subheader("Hyderabad Metro Route Map")
 
 st.image("hyderabad_metro_map.png", use_container_width=True)
 
-st.markdown("---")
 
-st.caption(
-"Fare based on Hyderabad Metro fare slabs. Actual fares may change."
-)
+st.caption("Fare values are approximate based on Hyderabad Metro fare slabs.")
